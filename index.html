@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora CGT</title>
+<meta name="description" content="Calculadora de méritos para baremación docente">
+<meta name="theme-color" content="#343a40">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Calc. CGT">
+<style>
+  :root {
+    --fondo: #e9e7e7; --tarjeta: #fff; --texto: #222; --suave: #666; --borde: #d0d0d0;
+    --cabecera: #343a40; --total-fondo: #fffae6; --total-texto: #222;
+    --naranja: #e8952b; --azul: #3d8fe8; --verde: #3f9e43; --marron: #94754a; --morado: #6967a3; --verdeosc: #4f8456;
+    --peligro: #e04f4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo: #15171a; --tarjeta: #23272c; --texto: #eee; --suave: #a8a8a8; --borde: #3a3f45;
+            --cabecera: #0f1113; --total-fondo: #3b3520; --total-texto: #ffe9a8; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 130px; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--fondo); color: var(--texto);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* cabecera fija con total general y accesos */
+  .cabecera {
+    position: sticky; top: 0; z-index: 10; background: var(--cabecera); color: #fff;
+    padding: calc(8px + env(safe-area-inset-top)) 12px 6px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  }
+  .fila-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 1100px; margin: 0 auto; }
+  .fila-cab h1 { font-size: 1.05rem; margin: 0; font-weight: 600; }
+  .general { text-align: right; line-height: 1.1; }
+  .general small { display: block; font-size: .7rem; opacity: .75; }
+  .general output { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; max-width: 1100px; margin: 0 auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; color: #fff; text-decoration: none; font-size: .8rem; background: rgba(255,255,255,.12);
+    padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip b { font-variant-numeric: tabular-nums; margin-left: 4px; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 12px; }
+  #apartados { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .tarjeta {
+    background: var(--tarjeta); border-radius: 14px; padding: 14px; border: 1px solid var(--borde);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .tarjeta.ancha { grid-column: 1 / -1; }
+  .tarjeta header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .tarjeta h2 { font-size: 1rem; margin: 0; }
+  .tarjeta h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); margin: 12px 0 6px; }
+  .sub { margin: 2px 0 0; font-size: .8rem; color: var(--suave); }
+  .caja-total { background: var(--total-fondo); color: var(--total-texto); border-radius: 10px; padding: 6px 10px; text-align: right; min-width: 92px; }
+  .caja-total output { display: block; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tope { display: block; font-size: .7rem; opacity: .7; }
+
+  .botones { display: grid; grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); gap: 8px; }
+  .botones.grandes { grid-template-columns: 1fr 1fr; }
+  .botones.grandes .b { min-height: 64px; font-size: 1.2rem; }
+  .botones.meritos { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+  .b {
+    min-height: 48px; border: 0; border-radius: 10px; color: #fff; font: inherit; font-weight: 700; font-size: 1rem;
+    cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent; transition: transform .06s, filter .06s; padding: 6px;
+  }
+  .b small { display: block; font-weight: 400; font-size: .75rem; opacity: .9; }
+  .b:active { transform: scale(.95); filter: brightness(.85); }
+  .naranja { background: var(--naranja); } .azul { background: var(--azul); } .verde { background: var(--verde); }
+  .marron { background: var(--marron); } .morado { background: var(--morado); } .verdeosc { background: var(--verdeosc); }
+
+  .aviso { color: var(--peligro); font-weight: 700; text-align: center; margin-top: 8px; font-size: .9rem; }
+  .aviso:empty { display: none; }
+  .detalle { font-size: .85rem; color: var(--suave); white-space: pre-line; margin-top: 10px; border-top: 1px dashed var(--borde); padding-top: 8px; }
+  .detalle:empty { display: none; }
+  .tarjeta footer { display: flex; gap: 8px; margin-top: 12px; }
+  .accion {
+    flex: 1; min-height: 44px; border-radius: 10px; border: 1px solid var(--borde); background: transparent; color: var(--texto);
+    font: inherit; font-weight: 600; cursor: pointer; touch-action: manipulation;
+  }
+  .accion:disabled { opacity: .4; }
+  .accion.peligro { color: var(--peligro); border-color: var(--peligro); }
+
+  /* valores de referencia */
+  details.config { margin-top: 16px; background: var(--tarjeta); border-radius: 14px; border: 1px solid var(--borde); }
+  details.config summary { padding: 14px; font-weight: 700; cursor: pointer; }
+  .config-cuerpo { padding: 0 14px 14px; }
+  .config-cuerpo p { font-size: .85rem; color: var(--suave); margin-top: 0; }
+  fieldset { border: 1px solid var(--borde); border-radius: 10px; margin: 0 0 10px; padding: 8px 12px; }
+  legend { font-weight: 700; font-size: .9rem; padding: 0 4px; }
+  .campo { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: .9rem; }
+  .campo span { flex: 1; }
+  .campo input {
+    width: 90px; font-size: 16px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--borde);
+    background: var(--fondo); color: var(--texto); text-align: right;
+  }
+  .campo em { font-style: normal; color: var(--suave); width: 12px; }
+
+  .pie { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 8px; }
+  .pie .accion { flex: 1 1 200px; }
+  .autor { text-align: center; font-size: .75rem; color: var(--suave); margin: 12px 0 20px; }
+</style>
+</head>
+<body>
+
+<div class="cabecera">
+  <div class="fila-cab">
+    <h1>Calculadoras CGT</h1>
+    <div class="general"><small>Suma de todos los apartados</small><output id="totalGeneral">0</output></div>
+  </div>
+  <nav class="chips" id="chips" aria-label="Ir a apartado"></nav>
+</div>
+
+<main>
+  <div id="apartados"></div>
+
+  <div class="pie">
+    <button type="button" class="accion peligro" id="btnResetTodo">Poner todo a cero</button>
+  </div>
+
+  <details class="config">
+    <summary>⚙ Valores de referencia</summary>
+    <div class="config-cuerpo">
+      <p>Los cambios se aplican al momento y se guardan en este dispositivo. Deja el máximo vacío si el apartado no tiene tope. El valor por mes de los cargos es 1/12 del valor por año.</p>
+      <div id="camposConfig"></div>
+      <button type="button" class="accion" id="btnRestaurar">Restaurar valores por defecto</button>
+    </div>
+  </details>
+
+  <p class="autor" title="autor: rasero_car@gva.es">Calculadoras CGT · v2</p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
